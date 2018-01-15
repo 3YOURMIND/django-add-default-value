@@ -23,7 +23,7 @@ Given the following migration:
 ```python
     operations = [
         migrations.AddField(
-            model_name='garden',
+            model_name='my_model    ',
             name='my_field',
             field=models.CharField(default='my_default', max_length=255),
         ),
