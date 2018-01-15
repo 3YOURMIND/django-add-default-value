@@ -35,7 +35,7 @@ setup(
     author='3YOURMIND GmbH',
     license='Apache License 2.0',
 
-    packages=['django-add-default-value'],
+    packages=['django_add_default_value'],
     install_requires=install_requirements,
 
     keywords='django migration dafault database backward compatibility',
