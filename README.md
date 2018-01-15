@@ -1,4 +1,5 @@
 # django-add-default-value
+
 This django Migration Operation can be used to transfer a fields default value
 to the database scheme.
 
@@ -10,10 +11,11 @@ to the database scheme.
 ## Usage
 
 Install the package.
+
 `pip install django-add-default-value`
 
-Whenever you need a default value to be present in your Database scheme,
-you need to add an `AddDefaultValue`-Operation to your migration file,
+Whenever you need a default value to be present in your database scheme,
+you need to add an `AddDefaultValue` - Operation to your migration file,
 before executing `python manage.py migrate`.
 
 ### Example
@@ -46,7 +48,7 @@ from django_add_default_value import AddDefaultValue
         ),
         AddDefaultValue(
             model_name='my_model',
-            name='tax_field',
+            name='my_field',
             value='my_default'
         )
     ]
