@@ -14,8 +14,8 @@
 
 from codecs import open
 from os import path
-from setuptools import setup, find_packages
 
+from setuptools import setup
 
 PROJECT_DIR = path.abspath(path.dirname(__file__))
 
@@ -49,8 +49,6 @@ setup(
         'Framework :: Django :: 2.0',
 
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
