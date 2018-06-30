@@ -43,7 +43,7 @@ class AddDefaultValue(Operation):
         so that it matches what this migration would perform.
         """
         # Nothing to do
-        # because the field should have the default setted anyway
+        # because the field should have the default set anyway
         pass
 
     def database_forwards(
@@ -58,19 +58,19 @@ class AddDefaultValue(Operation):
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if self.is_postgresql(schema_editor.connection.vendor):
-            sql_query = \
-                'ALTER TABLE {0} ALTER COLUMN {1} SET DEFAULT \'{2}\';'.format(
-                    to_model._meta.db_table, self.name, self.value
-                )
+            sql_query = f'ALTER TABLE {to_model._meta.db_table} ' \
+                        f'ALTER COLUMN {self.name} ' \
+                        f'SET DEFAULT \'{self.value}\';'
         else:
             sql_query = \
-                'ALTER TABLE `{0}` ALTER COLUMN `{1}` SET DEFAULT \'{2}\';'\
-                .format(to_model._meta.db_table, self.name, self.value)
+                f'ALTER TABLE `{to_model._meta.db_table}` ' \
+                f'ALTER COLUMN `{self.name}` ' \
+                f'SET DEFAULT \'{self.value}\';'
 
         schema_editor.execute(sql_query)
 
     def database_backwards(
-            self, app_label, schema_editor, from_state, to_state
+        self, app_label, schema_editor, from_state, to_state
     ):
         """
         Perform the mutation on the database schema in the reverse
@@ -81,17 +81,16 @@ class AddDefaultValue(Operation):
             return
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if self.is_postgresql(schema_editor.connection.vendor):
-            sql_query = 'ALTER TABLE {0} ALTER COLUMN {1} DROP DEFAULT;'.\
-                format(to_model._meta.db_table, self.name)
+            sql_query = f'ALTER TABLE {to_model._meta.db_table} ' \
+                        f'ALTER COLUMN {self.name} DROP DEFAULT;'
 
         else:
-            sql_query = 'ALTER TABLE `{0}` ALTER COLUMN `{1}` DROP DEFAULT;'.\
-                format(to_model._meta.db_table, self.name)
+            sql_query = f'ALTER TABLE `{to_model._meta.db_table}` ' \
+                        f'ALTER COLUMN `{self.name}` DROP DEFAULT;'
         schema_editor.execute(sql_query)
 
     def describe(self):
         """
         Output a brief summary of what the action does.
         """
-        return 'Add to field {0} the default value {1}'.format(
-            self.name, self.value)
+        return f'Add to field {self.name} the default value {self.value}'
