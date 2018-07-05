@@ -1,7 +1,7 @@
 # django-add-default-value
 
-> This django Migration Operation can be used to transfer a fields default value
-> to the database scheme.
+> Django Migration Operation that can be used to transfer a field’s default value
+to the database scheme.
 
 <a href="https://pypi.python.org/pypi/django-add-default-value/"><img src="https://img.shields.io/pypi/v/django-add-default-value.svg" alt="PyPi version" /></a>
 <a href="./LICENSE"><img src="https://img.shields.io/github/license/3yourmind/django-add-default-value.svg" alt="badge of license" /></a>
@@ -11,18 +11,27 @@
 
 ## Dependencies
 
-* MySQL (or compatible),
-* PostgreSQL
+* [MySQL][mysql] (or compatible)
+* [PostgreSQL][postgresql]
+
+## Installation
+
+<pre>
+<a href="https://.com">pip</a> install <a href="https://pypi.org/project/django-add-default-value/">django-add-default-value</a>
+</pre>
+
+You can then use `AddDefaultValue` in your migration file to transfer the default
+values to your database. Afterwards, it’s just the usual `./manage.py migrate`.
 
 ## Usage
 
-Install the package.
-
-`pip install django-add-default-value`
-
-Whenever you need a default value to be present in your database scheme,
-you need to add an `AddDefaultValue` - Operation to your migration file,
-before executing `python manage.py migrate`.
+```python
+AddDefaultValue(
+    model_name='my_model',
+    name='my_field',
+    value='my_default'
+)
+```
 
 ### Example
 
@@ -31,41 +40,43 @@ Given the following migration:
 ```python
 operations = [
     migrations.AddField(
+        field=models.CharField(default='my_default', max_length=255),
         model_name='my_model',
         name='my_field',
-        field=models.CharField(default='my_default', max_length=255),
     ),
 ]
 ```
 
-Modify that migration, in Order to add a default value:
+Modify the migration to add a default value:
 
-```python
-from django_add_default_value import AddDefaultValue
-
-# ...
-
-operations = [
-    migrations.AddField(
-        model_name='my_model',
-        name='my_field',
-        field=models.CharField(default='my_default', max_length=255),
-    ),
-    AddDefaultValue(
-        model_name='my_model',
-        name='my_field',
-        value='my_default',
-    ),
-]
+```diff
++from django_add_default_value import AddDefaultValue
++
+ operations = [
+     migrations.AddField(
+         field=models.CharField(default='my_default', max_length=255),
+         model_name='my_model',
+         name='my_field',
+     ),
++    AddDefaultValue(
++        model_name='my_model',
++        name='my_field',
++        value='my_default'
++    )
+ ]
 ```
 
 If you check `python manage.py sqlmigrate [app name] [migration]`,
-you will see that this migration now set's a default value.
+you will see that the default value now gets set.
 
 ## Contributing
 
-First, thank you very much if you want to contribute to the project. Please base your work on the `master` branch and also target this branch in your pull request.
+First of all, thank you very much for contributing to this project. Please base
+your work on the `master` branch and target `master` in your pull request.
 
 ## License
 
-_django-add-default-value_ is released under the [Apache 2.0 License](./LICENSE).
+`django-add-default-value` is released under the [Apache 2.0 License](./LICENSE).
+
+[mysql]: https://www.mysql.com
+[postgresql]: https://www.postgresql.org
