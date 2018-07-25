@@ -59,7 +59,8 @@ class AddDefaultValue(Operation):
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if self.is_postgresql(schema_editor.connection.vendor):
             sql_query = \
-                'ALTER TABLE {0} ALTER COLUMN {1} SET DEFAULT \'{2}\';'.format(
+                'ALTER TABLE {0} ALTER COLUMN "{1}" ' \
+                'SET DEFAULT \'{2}\';'.format(
                     to_model._meta.db_table, self.name, self.value
                 )
         else:
@@ -81,7 +82,7 @@ class AddDefaultValue(Operation):
             return
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if self.is_postgresql(schema_editor.connection.vendor):
-            sql_query = 'ALTER TABLE {0} ALTER COLUMN {1} DROP DEFAULT;'.\
+            sql_query = 'ALTER TABLE {0} ALTER COLUMN "{1}" DROP DEFAULT;'.\
                 format(to_model._meta.db_table, self.name)
 
         else:

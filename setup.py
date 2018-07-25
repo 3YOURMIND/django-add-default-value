@@ -19,14 +19,14 @@ from setuptools import setup, find_packages
 
 PROJECT_DIR = path.abspath(path.dirname(__file__))
 
-long_description = open('README.rst').read()
+long_description = open('README.md').read()
 
 install_requirements = [
 ]
 
 setup(
     name='django-add-default-value',
-    version='0.0.1',
+    version='0.0.2',
 
     description='This django Migration Operation can be used to transfer'
                 'a fields default value to the database scheme.',
