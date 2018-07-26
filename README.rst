@@ -2,7 +2,7 @@
 Django Add Default Value
 ========================
 
-Django Migration Operation that can be used to transfer a field’s default value
+Django Migration Operation that can be used to transfer a field's default value
 to the database scheme.
 
 .. image:: https://img.shields.io/pypi/v/django-add-default-value.svg?branch=master
@@ -32,7 +32,7 @@ Installation
 ``pip install django-add-default-value``
 
 You can then use ``AddDefaultValue`` in your migration file to transfer the default
-values to your database. Afterwards, it’s just the usual ``./manage.py migrate``.
+values to your database. Afterwards, it's just the usual ``./manage.py migrate``.
 
 Usage
 -----
