@@ -27,7 +27,7 @@ install_requirements = [
 
 setup(
     name='django-add-default-value',
-    version='0.0.4',
+    version='0.0.5',
 
     description='This django Migration Operation can be used to transfer'
                 'a fields default value to the database scheme.',
