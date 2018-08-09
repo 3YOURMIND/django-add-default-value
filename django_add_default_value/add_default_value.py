@@ -57,6 +57,8 @@ class AddDefaultValue(Operation):
         if isinstance(value, bool) and not self.is_postgresql(vendor):
             return 1 if value else 0
 
+        return value
+
     def database_forwards(
         self, app_label, schema_editor, from_state, to_state
     ):
