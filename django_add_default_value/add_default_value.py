@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 
 from django.db.migrations.operations.base import Operation
+from django.db import models
+
+
+def is_text_field(model, field_name):
+    options = model._meta  # type: models.base.Options
+    field = options.get_field(field_name)
+    return isinstance(field, models.TextField)
 
 
 class AddDefaultValue(Operation):
@@ -37,13 +44,53 @@ class AddDefaultValue(Operation):
     def is_postgresql(cls, vendor):
         return vendor.startswith('postgre')
 
+    @classmethod
+    def is_mariadb(cls, connection):
+        if hasattr(connection, 'mysql_is_mariadb'):
+            return connection.mysql_is_mariadb()
+        return False
+
+    @classmethod
+    def can_have_default_for_text(cls, connection):
+        """
+        MySQL has not allowed DEFAULT for BLOB and TEXT fields since the
+        beginning of time, but it is changing:
+
+            Before MariaDB 10.2.1, BLOB and TEXT columns could not be assigned
+            a DEFAULT value. This restriction was lifted in MariaDB 10.2.1.
+
+        Oracle does not yet have a version available that supports it,
+        quoting the `documentation
+        <https://dev.mysql.com/doc/refman/8.0/en/blob.html>`_:
+
+            BLOB and TEXT columns cannot have DEFAULT values.
+
+        :param connection: The DB connection, aka `schema_editor.connection`
+        :type connection: :class:`django.db.backends.base.base.BaseDatabaseWrapper`
+        :return: A boolean indicating we support default values for text
+                 fields.
+        :rtype: bool
+        """
+        if cls.is_postgresql(connection.vendor):
+            return True
+
+        if not hasattr(connection, 'mysql_version') or \
+                not callable(getattr(connection, 'mysql_version', None)):
+            return False
+
+        if not cls.is_mariadb(connection):
+            return False
+
+        maj, min, patch = connection.mysql_version()
+        return maj > 9 and min > 1 and patch > 0
+
     def state_forwards(self, app_label, state):
         """
         Take the state from the previous migration, and mutate it
         so that it matches what this migration would perform.
         """
         # Nothing to do
-        # because the field should have the default setted anyway
+        # because the field should have the default set anyway
         pass
 
     def clean_value(self, vendor, value):
@@ -59,6 +106,13 @@ class AddDefaultValue(Operation):
 
         return value
 
+    def can_apply_default(self, model, name, conn):
+        if is_text_field(model, name) and \
+                not self.can_have_default_for_text(conn):
+            return False
+
+        return True
+
     def database_forwards(
         self, app_label, schema_editor, from_state, to_state
     ):
@@ -69,10 +123,14 @@ class AddDefaultValue(Operation):
         if not self.is_correct_vendor(schema_editor.connection.vendor):
             return
 
+        to_model = to_state.apps.get_model(app_label, self.model_name)
+        if not self.can_apply_default(
+                to_model, self.name, schema_editor.connection):
+            return
+
         self.value = self.clean_value(schema_editor.connection.vendor,
                                       self.value)
 
-        to_model = to_state.apps.get_model(app_label, self.model_name)
         if self.is_postgresql(schema_editor.connection.vendor):
             sql_query = \
                 'ALTER TABLE {0} ALTER COLUMN "{1}" ' \
@@ -96,10 +154,14 @@ class AddDefaultValue(Operation):
         """
         if not self.is_correct_vendor(schema_editor.connection.vendor):
             return
-        self.value = self.clean_value(schema_editor.connection.vendor,
-                                      self.value)
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
+        if not self.can_apply_default(
+                to_model, self.name, schema_editor.connection):
+            return
+
+        self.value = self.clean_value(schema_editor.connection.vendor,
+                                      self.value)
         if self.is_postgresql(schema_editor.connection.vendor):
             sql_query = 'ALTER TABLE {0} ALTER COLUMN "{1}" DROP DEFAULT;'.\
                 format(to_model._meta.db_table, self.name)
