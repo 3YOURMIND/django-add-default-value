@@ -30,23 +30,23 @@ class AddDefaultValue(Operation):
         self.value = value
 
     def deconstruct(self):
-        return self.__class__.__name__, [], {
-            'model_name': self.model_name,
-            'name': self.name,
-            'value': self.value
-        }
+        return (
+            self.__class__.__name__,
+            [],
+            {"model_name": self.model_name, "name": self.name, "value": self.value},
+        )
 
     @classmethod
     def is_correct_vendor(cls, vendor):
-        return vendor.startswith('mysql') or vendor.startswith('postgre')
+        return vendor.startswith("mysql") or vendor.startswith("postgre")
 
     @classmethod
     def is_postgresql(cls, vendor):
-        return vendor.startswith('postgre')
+        return vendor.startswith("postgre")
 
     @classmethod
     def is_mariadb(cls, connection):
-        if hasattr(connection, 'mysql_is_mariadb'):
+        if hasattr(connection, "mysql_is_mariadb"):
             return connection.mysql_is_mariadb()
         return False
 
@@ -66,7 +66,7 @@ class AddDefaultValue(Operation):
             BLOB and TEXT columns cannot have DEFAULT values.
 
         :param connection: The DB connection, aka `schema_editor.connection`
-        :type connection: :class:`django.db.backends.base.base.BaseDatabaseWrapper`
+        :type connection: django.db.backends.base.base.BaseDatabaseWrapper
         :return: A boolean indicating we support default values for text
                  fields.
         :rtype: bool
@@ -74,8 +74,9 @@ class AddDefaultValue(Operation):
         if cls.is_postgresql(connection.vendor):
             return True
 
-        if not hasattr(connection, 'mysql_version') or \
-                not callable(getattr(connection, 'mysql_version', None)):
+        if not hasattr(connection, "mysql_version") or not callable(
+            getattr(connection, "mysql_version", None)
+        ):
             return False
 
         if not cls.is_mariadb(connection):
@@ -107,15 +108,12 @@ class AddDefaultValue(Operation):
         return value
 
     def can_apply_default(self, model, name, conn):
-        if is_text_field(model, name) and \
-                not self.can_have_default_for_text(conn):
+        if is_text_field(model, name) and not self.can_have_default_for_text(conn):
             return False
 
         return True
 
-    def database_forwards(
-        self, app_label, schema_editor, from_state, to_state
-    ):
+    def database_forwards(self, app_label, schema_editor, from_state, to_state):
         """
         Perform the mutation on the database schema in the normal
         (forwards) direction.
@@ -124,29 +122,26 @@ class AddDefaultValue(Operation):
             return
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
-        if not self.can_apply_default(
-                to_model, self.name, schema_editor.connection):
+        if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             return
 
-        self.value = self.clean_value(schema_editor.connection.vendor,
-                                      self.value)
+        self.value = self.clean_value(schema_editor.connection.vendor, self.value)
 
         if self.is_postgresql(schema_editor.connection.vendor):
-            sql_query = \
-                'ALTER TABLE {0} ALTER COLUMN "{1}" ' \
-                'SET DEFAULT \'{2}\';'.format(
+            sql_query = (
+                'ALTER TABLE {0} ALTER COLUMN "{1}" '
+                "SET DEFAULT '{2}';".format(
                     to_model._meta.db_table, self.name, self.value
                 )
+            )
         else:
-            sql_query = \
-                'ALTER TABLE `{0}` ALTER COLUMN `{1}` SET DEFAULT \'{2}\';'\
-                .format(to_model._meta.db_table, self.name, self.value)
+            sql_query = "ALTER TABLE `{0}` ALTER COLUMN `{1}` SET DEFAULT '{2}';".format(
+                to_model._meta.db_table, self.name, self.value
+            )
 
         schema_editor.execute(sql_query)
 
-    def database_backwards(
-            self, app_label, schema_editor, from_state, to_state
-    ):
+    def database_backwards(self, app_label, schema_editor, from_state, to_state):
         """
         Perform the mutation on the database schema in the reverse
         direction - e.g. if this were CreateModel, it would in fact
@@ -156,24 +151,23 @@ class AddDefaultValue(Operation):
             return
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
-        if not self.can_apply_default(
-                to_model, self.name, schema_editor.connection):
+        if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             return
 
-        self.value = self.clean_value(schema_editor.connection.vendor,
-                                      self.value)
+        self.value = self.clean_value(schema_editor.connection.vendor, self.value)
         if self.is_postgresql(schema_editor.connection.vendor):
-            sql_query = 'ALTER TABLE {0} ALTER COLUMN "{1}" DROP DEFAULT;'.\
-                format(to_model._meta.db_table, self.name)
+            sql_query = 'ALTER TABLE {0} ALTER COLUMN "{1}" DROP DEFAULT;'.format(
+                to_model._meta.db_table, self.name
+            )
 
         else:
-            sql_query = 'ALTER TABLE `{0}` ALTER COLUMN `{1}` DROP DEFAULT;'.\
-                format(to_model._meta.db_table, self.name)
+            sql_query = "ALTER TABLE `{0}` ALTER COLUMN `{1}` DROP DEFAULT;".format(
+                to_model._meta.db_table, self.name
+            )
         schema_editor.execute(sql_query)
 
     def describe(self):
         """
         Output a brief summary of what the action does.
         """
-        return 'Add to field {0} the default value {1}'.format(
-            self.name, self.value)
+        return "Add to field {0} the default value {1}".format(self.name, self.value)

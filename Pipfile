@@ -7,10 +7,10 @@ name = "pypi"
 Django = ">=1.10,<2.1"
 
 [dev-packages]
-tox = "*"
 coverage = "*"
 "flake8" = "*"
 bumpversion = "*"
 "e1839a8" = {editable = true, path = "."}
 "psycopg2-binary" = "*"
 mysqlclient = "*"
+tox = "*"

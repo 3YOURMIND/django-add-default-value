@@ -1,4 +1,5 @@
-from io import StringIO
+from __future__ import unicode_literals
+from django.utils.six import StringIO
 from django.test import TestCase, modify_settings
 from django.core.management import call_command
 from unittest import skipUnless
@@ -10,7 +11,7 @@ settings_module = os.environ['DJANGO_SETTINGS_MODULE']
 
 @skipUnless(settings_module == 'test_project.settings_pgsql',
             'PostgreSQL settings file not selected')
-class MigrationsTesterPostgresql(TestCase):
+class MigrationsTesterPgSQL(TestCase):
     @modify_settings(INSTALLED_APPS={'append': 'dadv.apps.DadvConfig'})
     def test_bool_default(self):
         file_obj = StringIO()
