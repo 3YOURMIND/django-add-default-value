@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-Django = ">=1.10,<2.1"
+Django = ">=1.11,<3"
 
 [dev-packages]
 coverage = "*"
@@ -14,3 +14,4 @@ bumpversion = "*"
 "psycopg2-binary" = "*"
 mysqlclient = "*"
 tox = "*"
+black = "==18.6b4"

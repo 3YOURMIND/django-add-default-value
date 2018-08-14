@@ -31,3 +31,6 @@ SECRET_KEY = "django_tests_secret_key"
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
+
+if os.environ.get('ADD_TEST_APP', False):
+    INSTALLED_APPS.append('dadv.apps.DadvConfig')

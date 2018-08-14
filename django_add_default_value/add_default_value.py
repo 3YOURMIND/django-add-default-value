@@ -10,9 +10,16 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
+import warnings
 
 from django.db.migrations.operations.base import Operation
 from django.db import models
+from datetime import date, datetime
+from django.utils import timezone
+
+
+NOW = "__NOW__"
+TODAY = "__TODAY__"
 
 
 def is_text_field(model, field_name):
@@ -23,6 +30,8 @@ def is_text_field(model, field_name):
 
 class AddDefaultValue(Operation):
     reversible = True
+    value_quote = "'"
+    constant_quote = ""
 
     def __init__(self, model_name, name, value):
         self.model_name = model_name
@@ -82,8 +91,8 @@ class AddDefaultValue(Operation):
         if not cls.is_mariadb(connection):
             return False
 
-        maj, min, patch = connection.mysql_version()
-        return maj > 9 and min > 1 and patch > 0
+        major, minor, patch = connection.mysql_version()
+        return major > 9 and minor > 1 and patch > 0
 
     def state_forwards(self, app_label, state):
         """
@@ -94,21 +103,55 @@ class AddDefaultValue(Operation):
         # because the field should have the default set anyway
         pass
 
+    def _clean_temporal(self, vendor, value):
+        if isinstance(value, date):
+            return value.isoformat(), self.value_quote, True
+
+        if isinstance(value, datetime):
+            if self.is_postgresql(vendor):
+                return value.isoformat(" ", timespec="seconds"), self.value_quote, True
+            else:
+                naive = timezone.make_naive(value)
+                return naive.isoformat(" ", timespec="seconds"), self.value_quote, True
+
+        return value, self.value_quote, False
+
+    def _clean_temporal_constants(self, vendor, value):
+        if value == NOW:
+            return "CURRENT_TIMESTAMP", self.constant_quote, True
+        elif value == TODAY and self.is_postgresql(vendor):
+            return "CURRENT_DATE", self.constant_quote, True
+
+        return value, self.value_quote, False
+
     def clean_value(self, vendor, value):
         """
         Lie, cheat and apply plastic surgery where needed
 
         :param vendor: database vendor we need to perform operations for
         :param value: the value as provided in the migration
-        :return: a better version of ourselves
+        :return: a 2-tuple containing the new value and the quotation to use
         """
         if isinstance(value, bool) and not self.is_postgresql(vendor):
-            return 1 if value else 0
+            return 1, self.value_quote if value else 0, self.value_quote
 
-        return value
+        value, quote, handled = self._clean_temporal(vendor, value)
+        if handled:
+            return value, quote
 
-    def can_apply_default(self, model, name, conn):
-        if is_text_field(model, name) and not self.can_have_default_for_text(conn):
+        value, quote, handled = self._clean_temporal_constants(vendor, value)
+        if handled:
+            return value, quote
+
+        return value, self.value_quote
+
+    def can_apply_default(self, model, name, connection):
+        if is_text_field(model, name) and not self.can_have_default_for_text(
+            connection
+        ):
+            return False
+
+        if self.value == TODAY and not self.is_postgresql(connection.vendor):
             return False
 
         return True
@@ -123,20 +166,31 @@ class AddDefaultValue(Operation):
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
+            warnings.warn(
+                "You requested a default for a field / database combination "
+                "that does not allow one. The default will not be set on: "
+                "{model}.{field}.".format(model=to_model, field=self.name)
+            )
             return
 
-        self.value = self.clean_value(schema_editor.connection.vendor, self.value)
-
+        self.value, quote = self.clean_value(
+            schema_editor.connection.vendor, self.value
+        )
+        format_kwargs = dict(
+            table=to_model._meta.db_table,
+            field=self.name,
+            value=self.value,
+            quote=quote,
+        )
         if self.is_postgresql(schema_editor.connection.vendor):
             sql_query = (
-                'ALTER TABLE {0} ALTER COLUMN "{1}" '
-                "SET DEFAULT '{2}';".format(
-                    to_model._meta.db_table, self.name, self.value
-                )
+                'ALTER TABLE {table} ALTER COLUMN "{field}" '
+                "SET DEFAULT {quote}{value}{quote};".format(**format_kwargs)
             )
         else:
-            sql_query = "ALTER TABLE `{0}` ALTER COLUMN `{1}` SET DEFAULT '{2}';".format(
-                to_model._meta.db_table, self.name, self.value
+            sql_query = (
+                "ALTER TABLE `{table}` ALTER COLUMN `{field}` SET DEFAULT "
+                "{quote}{value}{quote};".format(**format_kwargs)
             )
 
         schema_editor.execute(sql_query)
@@ -154,20 +208,24 @@ class AddDefaultValue(Operation):
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             return
 
-        self.value = self.clean_value(schema_editor.connection.vendor, self.value)
+        self.value, __ = self.clean_value(schema_editor.connection.vendor, self.value)
         if self.is_postgresql(schema_editor.connection.vendor):
-            sql_query = 'ALTER TABLE {0} ALTER COLUMN "{1}" DROP DEFAULT;'.format(
-                to_model._meta.db_table, self.name
+            sql_query = 'ALTER TABLE {table} ALTER COLUMN "{field}" DROP DEFAULT;'.format(
+                table=to_model._meta.db_table, field=self.name
             )
 
         else:
-            sql_query = "ALTER TABLE `{0}` ALTER COLUMN `{1}` DROP DEFAULT;".format(
-                to_model._meta.db_table, self.name
+            sql_query = (
+                "ALTER TABLE `{table}` ALTER COLUMN `{field}` DROP "
+                "DEFAULT;".format(table=to_model._meta.db_table, field=self.name)
             )
+
         schema_editor.execute(sql_query)
 
     def describe(self):
         """
         Output a brief summary of what the action does.
         """
-        return "Add to field {0} the default value {1}".format(self.name, self.value)
+        return "Add to field {field} the default value {value}".format(
+            field=self.name, value=self.value
+        )
