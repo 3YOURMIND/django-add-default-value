@@ -19,7 +19,7 @@ from setuptools import setup, find_packages
 
 PROJECT_DIR = path.abspath(path.dirname(__file__))
 
-with open(path.join(PROJECT_DIR, 'README.md'), encoding='utf-8') as f:
+with open(path.join(PROJECT_DIR, 'README.md'), 'r') as f:
     long_description = f.read()
 
 install_requirements = [
@@ -28,11 +28,12 @@ install_requirements = [
 
 setup(
     name='django-add-default-value',
-    version='0.0.7',
+    version='0.0.8',
 
     description='This django Migration Operation can be used to transfer'
-                'a fields default value to the database scheme.',
+                ' a fields default value to the database scheme.',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     url='https://github.com/3YOURMIND/django-add-default-value',
     author='3YOURMIND GmbH',
     license='Apache License 2.0',
