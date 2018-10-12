@@ -19,7 +19,7 @@ from setuptools import setup, find_packages
 
 PROJECT_DIR = path.abspath(path.dirname(__file__))
 
-with open(path.join(PROJECT_DIR, 'README.rst')) as f:
+with open(path.join(PROJET_DIR, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 install_requirements = [
