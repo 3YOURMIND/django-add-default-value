@@ -1,24 +1,14 @@
-========================
 Django Add Default Value
 ========================
 
 Django Migration Operation that can be used to transfer a field's default value
 to the database scheme.
 
-.. image:: https://img.shields.io/pypi/v/django-add-default-value.svg?branch=master
-    :target: https://pypi.python.org/pypi/django-add-default-value/
-
-.. image:: https://img.shields.io/github/license/3yourmind/django-add-default-value.svg
-    :target: ./LICENSE
-
-.. image:: https://img.shields.io/badge/PR-welcome-green.svg
-    :target: https://github.com/3YOURMIND/django-add-default-value/pulls
-
-.. image:: https://img.shields.io/badge/3YOURMIND-Hiring-brightgreen.svg
-    :target: https://img.shields.io/badge/3YOURMIND-Hiring-brightgreen.svg
-
-.. image:: https://img.shields.io/github/stars/3YOURMIND/django-add-default-value.svg?style=social&label=Stars
-    :target: https://github.com/3YOURMIND/django-add-default-value/stargazers
+[![](https://img.shields.io/pypi/v/django-add-default-value.svg?branch=master)](https://pypi.python.org/pypi/django-add-default-value/)
+[![](https://img.shields.io/github/license/3yourmind/django-add-default-value.svg)](./LICENSE)
+[![](https://img.shields.io/badge/PR-welcome-green.svg)](https://github.com/3YOURMIND/django-add-default-value/pulls)
+[![](https://img.shields.io/badge/3YOURMIND-Hiring-brightgreen.svg)](https://www.3yourmind.com/career)
+[![](https://img.shields.io/github/stars/3YOURMIND/django-add-default-value.svg?style=social&label=Stars)](https://github.com/3YOURMIND/django-add-default-value/stargazers)
 
 
 Dependencies
