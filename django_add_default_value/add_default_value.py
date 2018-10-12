@@ -46,6 +46,19 @@ class AddDefaultValue(Operation):
         # because the field should have the default set anyway
         pass
 
+    def clean_value(self, vendor, value):
+        """
+        Lie, cheat and apply plastic surgery where needed
+
+        :param vendor: database vendor we need to perform operations for
+        :param value: the value as provided in the migration
+        :return: a better version of ourselves
+        """
+        if isinstance(value, bool) and not self.is_postgresql(vendor):
+            return 1 if value else 0
+
+        return value
+
     def database_forwards(
         self, app_label, schema_editor, from_state, to_state
     ):
@@ -55,6 +68,9 @@ class AddDefaultValue(Operation):
         """
         if not self.is_correct_vendor(schema_editor.connection.vendor):
             return
+
+        self.value = self.clean_value(schema_editor.connection.vendor,
+                                      self.value)
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if self.is_postgresql(schema_editor.connection.vendor):
@@ -79,6 +95,9 @@ class AddDefaultValue(Operation):
         """
         if not self.is_correct_vendor(schema_editor.connection.vendor):
             return
+        self.value = self.clean_value(schema_editor.connection.vendor,
+                                      self.value)
+
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if self.is_postgresql(schema_editor.connection.vendor):
             sql_query = f'ALTER TABLE {to_model._meta.db_table} ' \
