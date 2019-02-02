@@ -12,6 +12,6 @@ coverage = "*"
 bumpversion = "*"
 "e1839a8" = {editable = true, path = "."}
 "psycopg2-binary" = "*"
-mysqlclient = "*"
+mysql-connector-python = "*"
 tox = "*"
 black = "==18.6b4"

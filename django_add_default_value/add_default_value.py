@@ -28,10 +28,17 @@ def is_text_field(model, field_name):
     return isinstance(field, models.TextField)
 
 
+def is_date_field(model, field_name):
+    options = model._meta  # type: models.base.Options
+    field = options.get_field(field_name)
+    return isinstance(field, models.DateField)
+
+
 class AddDefaultValue(Operation):
     reversible = True
     value_quote = "'"
     constant_quote = ""
+    func_quote = ""
 
     def __init__(self, model_name, name, value):
         self.model_name = model_name
@@ -128,9 +135,12 @@ class AddDefaultValue(Operation):
 
     def _clean_temporal_constants(self, vendor, value):
         if value == NOW:
-            return "CURRENT_TIMESTAMP", self.constant_quote, True
+            if self.is_postgresql(vendor):
+                return "now()", self.func_quote, True
+            elif self.is_mysql(vendor):
+                return "CURRENT_DATE", self.constant_quote, True
         elif value == TODAY and self.is_postgresql(vendor):
-            return "CURRENT_DATE", self.constant_quote, True
+            return "now()", self.func_quote, True
 
         return value, self.value_quote, False
 
@@ -167,6 +177,9 @@ class AddDefaultValue(Operation):
         if self.value == TODAY and not self.is_postgresql(connection.vendor):
             return False
 
+        if is_date_field(model, name) and self.is_mysql(connection.vendor):
+            return False
+
         return True
 
     def database_forwards(self, app_label, schema_editor, from_state, to_state):
@@ -186,13 +199,13 @@ class AddDefaultValue(Operation):
             )
             return
 
-        self.value, quote = self.clean_value(
+        sql_value, quote = self.clean_value(
             schema_editor.connection.vendor, self.value
         )
         format_kwargs = dict(
             table=to_model._meta.db_table,
             field=self.name,
-            value=self.value,
+            value=sql_value,
             quote=quote,
         )
         if self.is_postgresql(schema_editor.connection.vendor):

@@ -18,3 +18,4 @@ class TestHappyPath(models.Model):
     name = models.CharField(default="Happy path", max_length=15)
     dob = models.DateField(default=date(1970, 1, 1))
     rebirth = models.DateTimeField(default=timezone.now)
+    married = models.DateField(default=date.today)

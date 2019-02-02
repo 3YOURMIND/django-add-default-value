@@ -3,7 +3,7 @@
 import datetime
 from django.db import migrations, models
 import django.utils.timezone
-from django_add_default_value import AddDefaultValue, NOW
+from django_add_default_value import AddDefaultValue, NOW, TODAY
 
 
 class Migration(migrations.Migration):
@@ -21,8 +21,14 @@ class Migration(migrations.Migration):
             name="rebirth",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
+        migrations.AddField(
+            model_name="testhappypath",
+            name="married",
+            field=models.DateField(default=datetime.date.today),
+        ),
         AddDefaultValue(
             model_name="testhappypath", name="dob", value=datetime.date(1970, 1, 1)
         ),
         AddDefaultValue(model_name="testhappypath", name="rebirth", value=NOW),
+        AddDefaultValue(model_name="testhappypath", name="married", value=TODAY),
     ]

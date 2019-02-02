@@ -5,12 +5,13 @@ import unittest
 
 from django.core.management import call_command
 from django.test import TestCase, modify_settings
-from django.utils.six import StringIO
+from io import StringIO
 
 settings_module = os.environ["DJANGO_SETTINGS_MODULE"]
 
 
 class MigrateMixin:
+    # @unittest.skip
     def test_migrate(self):
         """Make sure migrations actually work"""
         # with open(os.devnull, "w") as nothing:
@@ -28,13 +29,21 @@ class CommandOutputMixin:
         file_obj = StringIO()
         cmd_options.update(stdout=file_obj)
         call_command(cmd, *cmd_args, **cmd_options)
-        return file_obj.getvalue()
+        output = file_obj.getvalue()
+
+        file_obj.close()
+        return output
 
 
 class MigrationsTesterBase(MigrateMixin, CommandOutputMixin):
+    bool_match = "ALTER COLUMN \"is_functional\" SET DEFAULT 'False';"
+    current_date_match = (
+        'ALTER TABLE dadv_testhappypath ALTER COLUMN "married" SET DEFAULT now();'
+    )
+
     def test_bool_default(self):
         actual = self.get_command_output("sqlmigrate", "dadv", "0001")
-        self.assertIn("ALTER COLUMN \"is_functional\" SET DEFAULT 'False';", actual)
+        self.assertIn(self.bool_match, actual)
 
     def test_text_default(self):
         """Make sure we can add defaults for text fields"""
@@ -63,16 +72,20 @@ class MigrationsTesterBase(MigrateMixin, CommandOutputMixin):
             actual,
         )
 
-    @unittest.expectedFailure
     def test_current_timestamp(self):
-        """Make sure we can do provide current timestamps"""
+        """Make sure we can provide current timestamps as default"""
         actual = self.get_command_output("sqlmigrate", "dadv", "0004")
         self.assertIn(
             'ALTER TABLE dadv_testhappypath ALTER COLUMN "rebirth" SET DEFAULT '
-            "CURRENT_TIMESTAMP;",
+            "now();",
             actual,
-            "There should be no quotes around CURRENT_TIMESTAMP",
+            "We should be using the now() function without quotes.",
         )
+
+    def test_current_date(self):
+        """Make sure we can provide current dates as default"""
+        actual = self.get_command_output("sqlmigrate", "dadv", "0004")
+        self.assertIn(self.current_date_match, actual)
 
 
 @unittest.skipUnless(
@@ -89,4 +102,4 @@ class MigrationsTesterPgSQL(TestCase, MigrationsTesterBase):
 )
 @modify_settings(INSTALLED_APPS={"append": "dadv.apps.DadvConfig"})
 class MigrationsTesterMySQL(TestCase, MigrationsTesterBase):
-    pass
+    bool_match = "ALTER COLUMN \"is_functional\" SET DEFAULT '0';"
