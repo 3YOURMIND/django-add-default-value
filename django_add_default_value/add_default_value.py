@@ -46,12 +46,22 @@ class AddDefaultValue(Operation):
         )
 
     @classmethod
-    def is_correct_vendor(cls, vendor):
-        return vendor.startswith("mysql") or vendor.startswith("postgre")
+    def is_supported_vendor(cls, vendor):
+        return (cls.is_postgresql(vendor) or cls.is_mysql(vendor)) and not cls.is_mssql(
+            vendor
+        )
+
+    @classmethod
+    def is_mysql(cls, vendor):
+        return vendor.startswith("mysql")
 
     @classmethod
     def is_postgresql(cls, vendor):
         return vendor.startswith("postgre")
+
+    @classmethod
+    def is_mssql(cls, vendor):
+        return vendor.startswith("microsoft")
 
     @classmethod
     def is_mariadb(cls, connection):
@@ -133,7 +143,10 @@ class AddDefaultValue(Operation):
         :return: a 2-tuple containing the new value and the quotation to use
         """
         if isinstance(value, bool) and not self.is_postgresql(vendor):
-            return 1, self.value_quote if value else 0, self.value_quote
+            if value:
+                return 1, self.value_quote
+
+            return 0, self.value_quote
 
         value, quote, handled = self._clean_temporal(vendor, value)
         if handled:
@@ -161,7 +174,7 @@ class AddDefaultValue(Operation):
         Perform the mutation on the database schema in the normal
         (forwards) direction.
         """
-        if not self.is_correct_vendor(schema_editor.connection.vendor):
+        if not self.is_supported_vendor(schema_editor.connection.vendor):
             return
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
@@ -201,7 +214,7 @@ class AddDefaultValue(Operation):
         direction - e.g. if this were CreateModel, it would in fact
         drop the model's table.
         """
-        if not self.is_correct_vendor(schema_editor.connection.vendor):
+        if not self.is_supported_vendor(schema_editor.connection.vendor):
             return
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
