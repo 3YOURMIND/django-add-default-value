@@ -23,7 +23,7 @@ with open(path.join(PROJECT_DIR, 'README.md'), 'r') as f:
     long_description = f.read()
 
 install_requirements = [
-    'Django>=1.10,<2.1'
+    'Django>=1.10,<2.2'
 ]
 
 setup(
@@ -50,6 +50,7 @@ setup(
         'Framework :: Django :: 1.10',
         'Framework :: Django :: 1.11',
         'Framework :: Django :: 2.0',
+        'Framework :: Django :: 2.1',
 
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
