@@ -234,7 +234,6 @@ class AddDefaultValue(Operation):
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             return
 
-        self.value, __ = self.clean_value(schema_editor.connection.vendor, self.value)
         if self.is_postgresql(schema_editor.connection.vendor):
             sql_query = 'ALTER TABLE {table} ALTER COLUMN "{field}" DROP DEFAULT;'.format(
                 table=to_model._meta.db_table, field=self.name
