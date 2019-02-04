@@ -13,5 +13,6 @@ bumpversion = "*"
 "e1839a8" = {editable = true, path = "."}
 "psycopg2-binary" = "*"
 mysql-connector-python = "*"
+mysqlclient = "<1.4"
 tox = "*"
 black = "==18.6b4"

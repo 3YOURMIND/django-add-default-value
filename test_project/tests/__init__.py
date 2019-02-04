@@ -49,7 +49,7 @@ class MigrationsTesterBase(MigrateMixin, CommandOutputMixin):
         """Make sure we can add defaults for text fields"""
         actual = self.get_command_output("sqlmigrate", "dadv", "0002")
         self.assertIn(
-            "ALTER TABLE dadv_testtextdefault ALTER COLUMN "
+            "ALTER TABLE \"dadv_testtextdefault\" ALTER COLUMN "
             "\"description\" SET DEFAULT 'No description provided';",
             actual,
         )
@@ -58,7 +58,7 @@ class MigrationsTesterBase(MigrateMixin, CommandOutputMixin):
         """Make sure we can add defaults for char fields"""
         actual = self.get_command_output("sqlmigrate", "dadv", "0003")
         self.assertIn(
-            'ALTER TABLE dadv_testhappypath ALTER COLUMN "name" SET DEFAULT \'Happy '
+            'ALTER TABLE "dadv_testhappypath" ALTER COLUMN "name" SET DEFAULT \'Happy '
             "path'",
             actual,
         )
@@ -67,7 +67,7 @@ class MigrationsTesterBase(MigrateMixin, CommandOutputMixin):
         """Make sure temporal values work"""
         actual = self.get_command_output("sqlmigrate", "dadv", "0004")
         self.assertIn(
-            'ALTER TABLE dadv_testhappypath ALTER COLUMN "dob" SET '
+            'ALTER TABLE "dadv_testhappypath" ALTER COLUMN "dob" SET '
             "DEFAULT '1970-01-01';",
             actual,
         )
@@ -76,7 +76,7 @@ class MigrationsTesterBase(MigrateMixin, CommandOutputMixin):
         """Make sure we can provide current timestamps as default"""
         actual = self.get_command_output("sqlmigrate", "dadv", "0004")
         self.assertIn(
-            'ALTER TABLE dadv_testhappypath ALTER COLUMN "rebirth" SET DEFAULT '
+            'ALTER TABLE "dadv_testhappypath" ALTER COLUMN "rebirth" SET DEFAULT '
             "now();",
             actual,
             "We should be using the now() function without quotes.",
@@ -102,4 +102,8 @@ class MigrationsTesterPgSQL(TestCase, MigrationsTesterBase):
 )
 @modify_settings(INSTALLED_APPS={"append": "dadv.apps.DadvConfig"})
 class MigrationsTesterMySQL(TestCase, MigrationsTesterBase):
-    bool_match = "ALTER COLUMN \"is_functional\" SET DEFAULT '0';"
+    bool_match = "ALTER COLUMN `is_functional` SET DEFAULT '0';"
+    current_date_match = (
+        'ALTER TABLE `dadv_testhappypath` ALTER COLUMN `married` SET DEFAULT '
+        'CURRENT_DATE;'
+    )
