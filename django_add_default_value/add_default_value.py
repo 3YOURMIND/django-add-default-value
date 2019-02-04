@@ -80,9 +80,7 @@ class AddDefaultValue(Operation):
             )
             return
 
-        sql_value, quote = self.clean_value(
-            schema_editor.connection.vendor, self.value
-        )
+        sql_value, quote = self.clean_value(schema_editor.connection.vendor, self.value)
         format_kwargs = dict(
             table=to_model._meta.db_table,
             field=self.name,
@@ -92,14 +90,12 @@ class AddDefaultValue(Operation):
         )
         if not self.is_mssql(schema_editor.connection.vendor):
             sql_query = (
-                'ALTER TABLE {name_quote}{table}{name_quote} '
+                "ALTER TABLE {name_quote}{table}{name_quote} "
                 'ALTER COLUMN {name_quote}{field}{name_quote}" '
                 "SET DEFAULT {quote}{value}{quote};".format(**format_kwargs)
             )
         else:
-            constraint_name = 'DADV_{model}_{field}_DEFAULT'.format(
-                model=self.model_name, field=self.name
-            )
+            constraint_name = self._mssql_constraint_name()
             format_kwargs.update(constraint_name=constraint_name)
             sql_query = (
                 "ALTER TABLE {name_quote}{table}{name_quote} "
@@ -123,15 +119,23 @@ class AddDefaultValue(Operation):
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             return
 
-        if self.is_postgresql(schema_editor.connection.vendor):
-            sql_query = 'ALTER TABLE {table} ALTER COLUMN "{field}" DROP DEFAULT;'.format(
-                table=to_model._meta.db_table, field=self.name
-            )
-
-        else:
+        if not self.is_mssql(schema_editor.connection.vendor):
             sql_query = (
-                "ALTER TABLE `{table}` ALTER COLUMN `{field}` DROP "
-                "DEFAULT;".format(table=to_model._meta.db_table, field=self.name)
+                "ALTER TABLE {name_quote}{table}{name_quote} "
+                "ALTER COLUMN {name_quote}{field}{name_quote} "
+                "DROP DEFAULT;".format(
+                    table=to_model._meta.db_table,
+                    field=self.name,
+                    name_quote=self.name_quote,
+                )
+            )
+        else:
+            constraint_name = self._mssql_constraint_name()
+            sql_query = "DROP DEFAULT {name_quote}{constraint_name}{name_quote};".format(
+                table=to_model._meta.db_table,
+                constraint_name=constraint_name,
+                field=self.name,
+                name_quote=self.name_quote,
             )
 
         schema_editor.execute(sql_query)
@@ -158,7 +162,10 @@ class AddDefaultValue(Operation):
             return
 
         if self.is_mysql(vendor):
-            self.name_quote = '`'
+            self.name_quote = "`"
+
+        if self.is_mssql(vendor):
+            self.name_quote = ""
 
     @classmethod
     def is_supported_vendor(cls, vendor):
@@ -190,7 +197,7 @@ class AddDefaultValue(Operation):
 
     def can_apply_default(self, model, name, connection):
         if is_text_field(model, name) and not self.can_have_default_for_text(
-                connection
+            connection
         ):
             return False
 
@@ -261,6 +268,11 @@ class AddDefaultValue(Operation):
 
         return value, self.value_quote
 
+    def _mssql_constraint_name(self):
+        return "DADV_{model}_{field}_DEFAULT".format(
+            model=self.model_name, field=self.name
+        )
+
     def _clean_temporal(self, vendor, value):
         if isinstance(value, date):
             return value.isoformat(), self.value_quote, True
@@ -284,4 +296,3 @@ class AddDefaultValue(Operation):
             return "now()", self.func_quote, True
 
         return value, self.value_quote, False
-
