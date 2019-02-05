@@ -91,7 +91,7 @@ class AddDefaultValue(Operation):
         if not self.is_mssql(schema_editor.connection.vendor):
             sql_query = (
                 "ALTER TABLE {name_quote}{table}{name_quote} "
-                'ALTER COLUMN {name_quote}{field}{name_quote}" '
+                "ALTER COLUMN {name_quote}{field}{name_quote} "
                 "SET DEFAULT {quote}{value}{quote};".format(**format_kwargs)
             )
         else:
