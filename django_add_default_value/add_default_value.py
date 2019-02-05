@@ -10,32 +10,49 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
+import warnings
 
 from django.db.migrations.operations.base import Operation
+from django.db import models
+from datetime import date, datetime
+from django.utils import timezone
+
+
+NOW = "__NOW__"
+TODAY = "__TODAY__"
+
+
+def is_text_field(model, field_name):
+    options = model._meta  # type: models.base.Options
+    field = options.get_field(field_name)
+    return isinstance(field, models.TextField)
+
+
+def is_date_field(model, field_name):
+    options = model._meta  # type: models.base.Options
+    field = options.get_field(field_name)
+    return isinstance(field, models.DateField)
 
 
 class AddDefaultValue(Operation):
     reversible = True
+    value_quote = "'"
+    constant_quote = ""
+    func_quote = ""
+    name_quote = '"'
 
     def __init__(self, model_name, name, value):
         self.model_name = model_name
         self.name = name
         self.value = value
 
-    def deconstruct(self):
-        return self.__class__.__name__, [], {
-            'model_name': self.model_name,
-            'name': self.name,
-            'value': self.value
-        }
-
-    @classmethod
-    def is_correct_vendor(cls, vendor):
-        return vendor.startswith('mysql') or vendor.startswith('postgre')
-
-    @classmethod
-    def is_postgresql(cls, vendor):
-        return vendor.startswith('postgre')
+    def describe(self):
+        """
+        Output a brief summary of what the action does.
+        """
+        return "Add to field {model}.{field} the default value {value}".format(
+            model=self.model_name, field=self.name, value=self.value
+        )
 
     def state_forwards(self, app_label, state):
         """
@@ -43,8 +60,189 @@ class AddDefaultValue(Operation):
         so that it matches what this migration would perform.
         """
         # Nothing to do
-        # because the field should have the default setted anyway
+        # because the field should have the default set anyway
         pass
+
+    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+        """
+        Perform the mutation on the database schema in the normal
+        (forwards) direction.
+        """
+        if not self.is_supported_vendor(schema_editor.connection.vendor):
+            return
+
+        to_model = to_state.apps.get_model(app_label, self.model_name)
+        if not self.can_apply_default(to_model, self.name, schema_editor.connection):
+            warnings.warn(
+                "You requested a default for a field / database combination "
+                "that does not allow one. The default will not be set on: "
+                "{model}.{field}.".format(model=to_model.__name__, field=self.name)
+            )
+            return
+
+        sql_value, quote = self.clean_value(schema_editor.connection.vendor, self.value)
+        format_kwargs = dict(
+            table=to_model._meta.db_table,
+            field=self.name,
+            value=sql_value,
+            quote=quote,
+            name_quote=self.name_quote,
+        )
+        if not self.is_mssql(schema_editor.connection.vendor):
+            sql_query = (
+                "ALTER TABLE {name_quote}{table}{name_quote} "
+                'ALTER COLUMN {name_quote}{field}{name_quote}" '
+                "SET DEFAULT {quote}{value}{quote};".format(**format_kwargs)
+            )
+        else:
+            constraint_name = self._mssql_constraint_name()
+            format_kwargs.update(constraint_name=constraint_name)
+            sql_query = (
+                "ALTER TABLE {name_quote}{table}{name_quote} "
+                "ADD CONSTRAINT {name_quote}{constraint_name}{name_quote} "
+                "DEFAULT {quote}{value}{quote} "
+                "FOR {name_quote}{field}{name_quote};".format(**format_kwargs)
+            )
+
+        schema_editor.execute(sql_query)
+
+    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+        """
+        Perform the mutation on the database schema in the reverse
+        direction - e.g. if this were CreateModel, it would in fact
+        drop the model's table.
+        """
+        if not self.is_supported_vendor(schema_editor.connection.vendor):
+            return
+
+        to_model = to_state.apps.get_model(app_label, self.model_name)
+        if not self.can_apply_default(to_model, self.name, schema_editor.connection):
+            return
+
+        if not self.is_mssql(schema_editor.connection.vendor):
+            sql_query = (
+                "ALTER TABLE {name_quote}{table}{name_quote} "
+                "ALTER COLUMN {name_quote}{field}{name_quote} "
+                "DROP DEFAULT;".format(
+                    table=to_model._meta.db_table,
+                    field=self.name,
+                    name_quote=self.name_quote,
+                )
+            )
+        else:
+            constraint_name = self._mssql_constraint_name()
+            sql_query = "DROP DEFAULT {name_quote}{constraint_name}{name_quote};".format(
+                table=to_model._meta.db_table,
+                constraint_name=constraint_name,
+                field=self.name,
+                name_quote=self.name_quote,
+            )
+
+        schema_editor.execute(sql_query)
+
+    def deconstruct(self):
+        return (
+            self.__class__.__name__,
+            [],
+            {"model_name": self.model_name, "name": self.name, "value": self.value},
+        )
+
+    def initialize_vendor_state(self, connection):
+        self.set_quotes(connection.vendor)
+
+    def set_quotes(self, vendor):
+        """
+        Set the various quotes according to vendor. The default quotes are set to the
+        default vendor.
+
+        :param vendor:
+        :return:
+        """
+        if self.is_default_vendor(vendor):
+            return
+
+        if self.is_mysql(vendor):
+            self.name_quote = "`"
+
+        if self.is_mssql(vendor):
+            self.name_quote = ""
+
+    @classmethod
+    def is_supported_vendor(cls, vendor):
+        return (cls.is_postgresql(vendor) or cls.is_mysql(vendor)) and not cls.is_mssql(
+            vendor
+        )
+
+    @classmethod
+    def is_default_vendor(cls, vendor):
+        return cls.is_postgresql(vendor)
+
+    @classmethod
+    def is_mysql(cls, vendor):
+        return vendor.startswith("mysql")
+
+    @classmethod
+    def is_postgresql(cls, vendor):
+        return vendor.startswith("postgre")
+
+    @classmethod
+    def is_mssql(cls, vendor):
+        return vendor.startswith("microsoft")
+
+    @classmethod
+    def is_mariadb(cls, connection):
+        if hasattr(connection, "mysql_is_mariadb"):
+            return connection.mysql_is_mariadb()
+        return False
+
+    def can_apply_default(self, model, name, connection):
+        if is_text_field(model, name) and not self.can_have_default_for_text(
+            connection
+        ):
+            return False
+
+        if self.value == TODAY and not self.is_postgresql(connection.vendor):
+            return False
+
+        if is_date_field(model, name) and self.is_mysql(connection.vendor):
+            return False
+
+        return True
+
+    @classmethod
+    def can_have_default_for_text(cls, connection):
+        """
+        MySQL has not allowed DEFAULT for BLOB and TEXT fields since the
+        beginning of time, but it is changing:
+
+            Before MariaDB 10.2.1, BLOB and TEXT columns could not be assigned
+            a DEFAULT value. This restriction was lifted in MariaDB 10.2.1.
+
+        Oracle does not yet have a version available that supports it,
+        quoting the `documentation
+        <https://dev.mysql.com/doc/refman/8.0/en/blob.html>`_:
+
+            BLOB and TEXT columns cannot have DEFAULT values.
+
+        :param connection: The DB connection, aka `schema_editor.connection`
+        :type connection: django.db.backends.base.base.BaseDatabaseWrapper
+        :return: A boolean indicating we support default values for text
+                 fields.
+        :rtype: bool
+        """
+        if cls.is_postgresql(connection.vendor):
+            return True
+
+        if not hasattr(connection, "mysql_version") or not callable(
+            getattr(connection, "mysql_version", None)
+        ):
+            return False
+
+        if not cls.is_mariadb(connection):
+            return False
+
+        major, minor, patch = connection.mysql_version()
+        return major > 9 and minor > 1 and patch > 0
 
     def clean_value(self, vendor, value):
         """
@@ -52,66 +250,49 @@ class AddDefaultValue(Operation):
 
         :param vendor: database vendor we need to perform operations for
         :param value: the value as provided in the migration
-        :return: a better version of ourselves
+        :return: a 2-tuple containing the new value and the quotation to use
         """
         if isinstance(value, bool) and not self.is_postgresql(vendor):
-            return 1 if value else 0
+            if value:
+                return 1, self.value_quote
 
-        return value
+            return 0, self.value_quote
 
-    def database_forwards(
-        self, app_label, schema_editor, from_state, to_state
-    ):
-        """
-        Perform the mutation on the database schema in the normal
-        (forwards) direction.
-        """
-        if not self.is_correct_vendor(schema_editor.connection.vendor):
-            return
+        value, quote, handled = self._clean_temporal(vendor, value)
+        if handled:
+            return value, quote
 
-        self.value = self.clean_value(schema_editor.connection.vendor,
-                                      self.value)
+        value, quote, handled = self._clean_temporal_constants(vendor, value)
+        if handled:
+            return value, quote
 
-        to_model = to_state.apps.get_model(app_label, self.model_name)
-        if self.is_postgresql(schema_editor.connection.vendor):
-            sql_query = \
-                'ALTER TABLE {0} ALTER COLUMN "{1}" ' \
-                'SET DEFAULT \'{2}\';'.format(
-                    to_model._meta.db_table, self.name, self.value
-                )
-        else:
-            sql_query = \
-                'ALTER TABLE `{0}` ALTER COLUMN `{1}` SET DEFAULT \'{2}\';'\
-                .format(to_model._meta.db_table, self.name, self.value)
+        return value, self.value_quote
 
-        schema_editor.execute(sql_query)
+    def _mssql_constraint_name(self):
+        return "DADV_{model}_{field}_DEFAULT".format(
+            model=self.model_name, field=self.name
+        )
 
-    def database_backwards(
-            self, app_label, schema_editor, from_state, to_state
-    ):
-        """
-        Perform the mutation on the database schema in the reverse
-        direction - e.g. if this were CreateModel, it would in fact
-        drop the model's table.
-        """
-        if not self.is_correct_vendor(schema_editor.connection.vendor):
-            return
-        self.value = self.clean_value(schema_editor.connection.vendor,
-                                      self.value)
+    def _clean_temporal(self, vendor, value):
+        if isinstance(value, date):
+            return value.isoformat(), self.value_quote, True
 
-        to_model = to_state.apps.get_model(app_label, self.model_name)
-        if self.is_postgresql(schema_editor.connection.vendor):
-            sql_query = 'ALTER TABLE {0} ALTER COLUMN "{1}" DROP DEFAULT;'.\
-                format(to_model._meta.db_table, self.name)
+        if isinstance(value, datetime):
+            if self.is_postgresql(vendor):
+                return value.isoformat(" ", timespec="seconds"), self.value_quote, True
+            else:
+                naive = timezone.make_naive(value)
+                return naive.isoformat(" ", timespec="seconds"), self.value_quote, True
 
-        else:
-            sql_query = 'ALTER TABLE `{0}` ALTER COLUMN `{1}` DROP DEFAULT;'.\
-                format(to_model._meta.db_table, self.name)
-        schema_editor.execute(sql_query)
+        return value, self.value_quote, False
 
-    def describe(self):
-        """
-        Output a brief summary of what the action does.
-        """
-        return 'Add to field {0} the default value {1}'.format(
-            self.name, self.value)
+    def _clean_temporal_constants(self, vendor, value):
+        if value == NOW:
+            if self.is_postgresql(vendor):
+                return "now()", self.func_quote, True
+            elif self.is_mysql(vendor):
+                return "CURRENT_DATE", self.constant_quote, True
+        elif value == TODAY and self.is_postgresql(vendor):
+            return "now()", self.func_quote, True
+
+        return value, self.value_quote, False
