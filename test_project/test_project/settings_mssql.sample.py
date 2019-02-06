@@ -1,9 +1,11 @@
 # flake8: noqa
 from .settings import *
 
-CONNECTION_OPTS = {
+CONNECTION_OPTIONS = {
+    'driver': 'FreeTDS',
     'host_is_server': True,
     'unicode_results': True,
+    # See: https://github.com/michiya/django-pyodbc-azure/issues/185#issuecomment-460007327
     'extra_params': 'tds_version=8.0',
 }
 DBNAME = os.environ.get("MSSQL_DBNAME", "dadv")
@@ -15,17 +17,10 @@ DATABASES = {
         "ENGINE": "sql_server.pyodbc",
         "NAME": DBNAME,
         "USER": DBUSER,
+        "PASSWORD": DBPASSWORD,
         "HOST": "localhost",
         "PORT": '1433',
-        "PASSWORD": DBPASSWORD,
-        "OPTIONS": CONNECTION_OPTS,
-    },
-    "other": {
-        "ENGINE": "sql_server.pyodbc",
-        "NAME": DBNAME + "_other",
-        "USER": DBUSER,
-        "PASSWORD": DBPASSWORD,
-        "OPTIONS": CONNECTION_OPTS,
+        "OPTIONS": CONNECTION_OPTIONS,
     },
 }
 

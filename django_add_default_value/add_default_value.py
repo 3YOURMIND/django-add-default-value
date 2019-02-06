@@ -10,6 +10,7 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
+from __future__ import unicode_literals
 import warnings
 
 from django.db.migrations.operations.base import Operation
@@ -17,9 +18,10 @@ from django.db import models
 from datetime import date, datetime
 from django.utils import timezone
 
-
 NOW = "__NOW__"
 TODAY = "__TODAY__"
+START = 0
+END = 1
 
 
 def is_text_field(model, field_name):
@@ -36,10 +38,12 @@ def is_date_field(model, field_name):
 
 class AddDefaultValue(Operation):
     reversible = True
-    value_quote = "'"
-    constant_quote = ""
-    func_quote = ""
-    name_quote = '"'
+    quotes = {
+        "value": ("'", "'"),
+        "constant": ("", ""),
+        "function": ("", ""),
+        "name": ('"', '"'),
+    }
 
     def __init__(self, model_name, name, value):
         self.model_name = model_name
@@ -71,6 +75,8 @@ class AddDefaultValue(Operation):
         if not self.is_supported_vendor(schema_editor.connection.vendor):
             return
 
+        self.initialize_vendor_state(schema_editor.connection)
+
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             warnings.warn(
@@ -80,28 +86,34 @@ class AddDefaultValue(Operation):
             )
             return
 
-        sql_value, quote = self.clean_value(schema_editor.connection.vendor, self.value)
+        sql_value, value_quote = self.clean_value(
+            schema_editor.connection.vendor, self.value
+        )
         format_kwargs = dict(
             table=to_model._meta.db_table,
             field=self.name,
             value=sql_value,
-            quote=quote,
-            name_quote=self.name_quote,
+            value_quote_start=value_quote[START],
+            value_quote_end=value_quote[END],
+            name_quote_start=self.quotes["name"][START],
+            name_quote_end=self.quotes["name"][END],
         )
         if not self.is_mssql(schema_editor.connection.vendor):
             sql_query = (
-                "ALTER TABLE {name_quote}{table}{name_quote} "
-                'ALTER COLUMN {name_quote}{field}{name_quote}" '
-                "SET DEFAULT {quote}{value}{quote};".format(**format_kwargs)
+                "ALTER TABLE {name_quote_start}{table}{name_quote_end} "
+                "ALTER COLUMN {name_quote_start}{field}{name_quote_end} "
+                "SET DEFAULT {value_quote_start}{value}{value_quote_end};".format(
+                    **format_kwargs
+                )
             )
         else:
-            constraint_name = self._mssql_constraint_name()
+            constraint_name = self.mssql_constraint_name()
             format_kwargs.update(constraint_name=constraint_name)
             sql_query = (
-                "ALTER TABLE {name_quote}{table}{name_quote} "
-                "ADD CONSTRAINT {name_quote}{constraint_name}{name_quote} "
-                "DEFAULT {quote}{value}{quote} "
-                "FOR {name_quote}{field}{name_quote};".format(**format_kwargs)
+                "ALTER TABLE {name_quote_start}{table}{name_quote_end} "
+                "ADD CONSTRAINT {name_quote_start}{constraint_name}{name_quote_end} "
+                "DEFAULT {value_quote_start}{value}{value_quote_end} "
+                "FOR {name_quote_start}{field}{name_quote_end};".format(**format_kwargs)
             )
 
         schema_editor.execute(sql_query)
@@ -119,23 +131,23 @@ class AddDefaultValue(Operation):
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             return
 
+        format_kwargs = dict(
+            table=to_model._meta.db_table,
+            field=self.name,
+            name_quote_start=self.quotes["name"][START],
+            name_quote_end=self.quotes["name"][END],
+        )
         if not self.is_mssql(schema_editor.connection.vendor):
             sql_query = (
-                "ALTER TABLE {name_quote}{table}{name_quote} "
-                "ALTER COLUMN {name_quote}{field}{name_quote} "
-                "DROP DEFAULT;".format(
-                    table=to_model._meta.db_table,
-                    field=self.name,
-                    name_quote=self.name_quote,
-                )
+                "ALTER TABLE {name_quote_start}{table}{name_quote_end} "
+                "ALTER COLUMN {name_quote_start}{field}{name_quote_end} "
+                "DROP DEFAULT;".format(**format_kwargs)
             )
         else:
-            constraint_name = self._mssql_constraint_name()
-            sql_query = "DROP DEFAULT {name_quote}{constraint_name}{name_quote};".format(
-                table=to_model._meta.db_table,
-                constraint_name=constraint_name,
-                field=self.name,
-                name_quote=self.name_quote,
+            constraint_name = self.mssql_constraint_name()
+            format_kwargs.update(constraint_name=constraint_name)
+            sql_query = "DROP DEFAULT {name_quote_start}{constraint_name}{name_quote_end};".format(
+                **format_kwargs
             )
 
         schema_editor.execute(sql_query)
@@ -155,23 +167,20 @@ class AddDefaultValue(Operation):
         Set the various quotes according to vendor. The default quotes are set to the
         default vendor.
 
-        :param vendor:
-        :return:
+        :param vendor: Connection vendor string as provided by the db backend
         """
         if self.is_default_vendor(vendor):
             return
 
         if self.is_mysql(vendor):
-            self.name_quote = "`"
+            self.quotes["name"] = ("`", "`")
 
         if self.is_mssql(vendor):
-            self.name_quote = ""
+            self.quotes["name"] = ("[", "]")
 
     @classmethod
     def is_supported_vendor(cls, vendor):
-        return (cls.is_postgresql(vendor) or cls.is_mysql(vendor)) and not cls.is_mssql(
-            vendor
-        )
+        return cls.is_postgresql(vendor) or cls.is_mysql(vendor) or cls.is_mssql(vendor)
 
     @classmethod
     def is_default_vendor(cls, vendor):
@@ -201,10 +210,7 @@ class AddDefaultValue(Operation):
         ):
             return False
 
-        if self.value == TODAY and not self.is_postgresql(connection.vendor):
-            return False
-
-        if is_date_field(model, name) and self.is_mysql(connection.vendor):
+        if self.value == TODAY and self.is_mysql(connection.vendor):
             return False
 
         return True
@@ -230,7 +236,7 @@ class AddDefaultValue(Operation):
                  fields.
         :rtype: bool
         """
-        if cls.is_postgresql(connection.vendor):
+        if cls.is_postgresql(connection.vendor) or cls.is_mssql(connection.vendor):
             return True
 
         if not hasattr(connection, "mysql_version") or not callable(
@@ -241,6 +247,7 @@ class AddDefaultValue(Operation):
         if not cls.is_mariadb(connection):
             return False
 
+        # noinspection PyUnresolvedReferences
         major, minor, patch = connection.mysql_version()
         return major > 9 and minor > 1 and patch > 0
 
@@ -254,9 +261,9 @@ class AddDefaultValue(Operation):
         """
         if isinstance(value, bool) and not self.is_postgresql(vendor):
             if value:
-                return 1, self.value_quote
+                return 1, self.quotes["value"]
 
-            return 0, self.value_quote
+            return 0, self.quotes["value"]
 
         value, quote, handled = self._clean_temporal(vendor, value)
         if handled:
@@ -266,33 +273,43 @@ class AddDefaultValue(Operation):
         if handled:
             return value, quote
 
-        return value, self.value_quote
+        return value, self.quotes["value"]
 
-    def _mssql_constraint_name(self):
+    def mssql_constraint_name(self):
         return "DADV_{model}_{field}_DEFAULT".format(
             model=self.model_name, field=self.name
         )
 
     def _clean_temporal(self, vendor, value):
         if isinstance(value, date):
-            return value.isoformat(), self.value_quote, True
+            return value.isoformat(), self.quotes["value"], True
 
         if isinstance(value, datetime):
             if self.is_postgresql(vendor):
-                return value.isoformat(" ", timespec="seconds"), self.value_quote, True
+                return (
+                    value.isoformat(" ", timespec="seconds"),
+                    self.quotes["value"],
+                    True,
+                )
             else:
                 naive = timezone.make_naive(value)
-                return naive.isoformat(" ", timespec="seconds"), self.value_quote, True
+                return (
+                    naive.isoformat(" ", timespec="seconds"),
+                    self.quotes["value"],
+                    True,
+                )
 
-        return value, self.value_quote, False
+        return value, self.quotes["value"], False
 
     def _clean_temporal_constants(self, vendor, value):
-        if value == NOW:
+        if value == NOW or value == TODAY:
             if self.is_postgresql(vendor):
-                return "now()", self.func_quote, True
-            elif self.is_mysql(vendor):
-                return "CURRENT_DATE", self.constant_quote, True
-        elif value == TODAY and self.is_postgresql(vendor):
-            return "now()", self.func_quote, True
+                return "now()", self.quotes["function"], True
+            elif self.is_mssql(vendor):
+                return "GETDATE()", self.quotes["function"], True
 
-        return value, self.value_quote, False
+        # https://stackoverflow.com/a/20461045/10000573
+        if value == NOW and self.is_mysql(vendor):
+            return "CURRENT_TIMESTAMP", self.quotes["constant"], True
+
+        return value, self.quotes["value"], False

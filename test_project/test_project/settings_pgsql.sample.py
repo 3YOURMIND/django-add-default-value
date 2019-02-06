@@ -16,13 +16,6 @@ DATABASES = {
         "NAME": DBNAME,
         "USER": DBUSER,
     },
-    "other": {
-        "ENGINE": "django.db.backends.postgresql",
-        "HOST": DBHOST,
-        "PORT": DBPORT,
-        "NAME": DBNAME + "_other",
-        "USER": DBUSER,
-    },
 }
 
 SECRET_KEY = "django_tests_secret_key"

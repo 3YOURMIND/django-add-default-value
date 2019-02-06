@@ -10,11 +10,6 @@ DATABASES = {
         "NAME": DBNAME,
         "OPTIONS": {"read_default_file": OPTIONS_FILE},
     },
-    "other": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": DBNAME + "_other",
-        "OPTIONS": {"read_default_file": OPTIONS_FILE},
-    },
 }
 
 SECRET_KEY = "django_tests_secret_key"
