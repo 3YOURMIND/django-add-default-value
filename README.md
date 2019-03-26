@@ -76,6 +76,14 @@ Contributing
 First of all, thank you very much for contributing to this project. Please base
 your work on the ``master`` branch and target ``master`` in your pull request.
 
+Roadmap
+-------
+0.1: Better and maintainable packaging
+0.3: Tests work with tox. Supported platforms / versions frozen
+0.5: Solid tests integrated with Travis or similar CI pipeline
+0.9: Final API changes preparing for 1.0
+1.0: API freeze
+
 License
 -------
 
