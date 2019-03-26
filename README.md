@@ -91,13 +91,26 @@ Driver=/usr/lib/x86_64-linux-gnu/odbc/libtdsodbc.so
 Setup=/usr/lib/x86_64-linux-gnu/odbc/libtdsS.so
 ```
 
+To succesfully use the `dbshell` management command (very useful for debugging),
+the client binaries for the respective database engines are needed.
+
+Then install [pipenv](https://pipenv.readthedocs.io/en/latest/install/#installing-pipenv).
+Edit the `Pipfile` to select your Django version and the accompanying MS-SQL
+driver. Make sure you don't commit this change in any pull request - we always
+set it to the oldest supported version.
+
+Once you've updated the Pipfile, run `pipenv install --python 3 --dev`. You
+should now have a working development environment as a virtualenv. To access it,
+run `pipenv shell` or prefix commands with `pipenv run`. For more information
+see the [pipenv documentation](https://pipenv.readthedocs.io/en/latest/basics/).
+
 Roadmap
 -------
-0.1: Better and maintainable packaging
-0.3: Tests work with tox. Supported platforms / versions frozen
-0.5: Solid tests integrated with Travis or similar CI pipeline
-0.9: Final API changes preparing for 1.0
-1.0: API freeze
+- 0.1: Better and maintainable packaging
+- 0.3: Tests work with tox. Supported platforms / versions frozen
+- 0.5: Solid tests integrated with Travis or similar CI pipeline
+- 0.9: Final API changes preparing for 1.0
+- 1.0: API freeze
 
 License
 -------
