@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 import os
 import sys
+try:
+    import pymysql
+except ImportError:
+    pass
+else:
+    pymysql.install_as_MySQLdb()
+
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "test_project.settings")

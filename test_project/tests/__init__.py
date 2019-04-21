@@ -110,8 +110,9 @@ class MigrationsTesterMySQL(TestCase, MigrationsTesterBase):
     )
     current_timestamp_match = (
         "ALTER TABLE `dadv_testhappypath` ALTER COLUMN `rebirth` SET DEFAULT "
-        "CURRENT_TIMESTAMP;"
+        "(CURRENT_TIMESTAMP);"
     )
+    current_date_match = 'ALTER TABLE "dadv_testhappypath" ALTER COLUMN `married` SET DEFAULT (CURRENT_DATE);'
 
     @unittest.expectedFailure
     def test_text_default(self):
