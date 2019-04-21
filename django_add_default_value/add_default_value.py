@@ -170,7 +170,7 @@ class AddDefaultValue(Operation):
         :param vendor: Connection vendor string as provided by the db backend
         """
         if self.is_default_vendor(vendor):
-            return
+            self.quotes["name"] = ('"', '"')
 
         if self.is_mysql(vendor):
             self.quotes["name"] = ("`", "`")
