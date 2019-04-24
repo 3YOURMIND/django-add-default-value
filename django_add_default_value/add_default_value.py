@@ -13,6 +13,7 @@
 from __future__ import unicode_literals
 import warnings
 
+import django
 from django.db.migrations.operations.base import Operation
 from django.db import models
 from datetime import date, datetime
@@ -162,14 +163,12 @@ class AddDefaultValue(Operation):
         )
 
     def initialize_vendor_state(self, schema_editor):
-        import django
-
         self.set_quotes(schema_editor.connection.vendor)
         major, minor, patch, __, ___ = django.VERSION
         if (
             self.is_mysql(schema_editor.connection.vendor)
             and version_with_broken_quote_value(major, minor, patch)
-            and not getattr(schema_editor.__class__, "_patched_quote_value", False)
+            and not hasattr(schema_editor.__class__, "_patched_quote_value")
         ):
             schema_editor.__class__.quote_value = quote_value
             schema_editor.__class__._patched_quote_value = True
@@ -328,7 +327,7 @@ class AddDefaultValue(Operation):
 
 
 def version_with_broken_quote_value(major, minor, patch):
-    if 1 < major < 3:
+    if major == 2:
         if minor == 1 and patch < 9:
             return True
         elif minor == 2 and patch < 2:
