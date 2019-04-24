@@ -13,6 +13,7 @@
 from __future__ import unicode_literals
 import warnings
 
+import django
 from django.db.migrations.operations.base import Operation
 from django.db import models
 from datetime import date, datetime
@@ -75,7 +76,7 @@ class AddDefaultValue(Operation):
         if not self.is_supported_vendor(schema_editor.connection.vendor):
             return
 
-        self.initialize_vendor_state(schema_editor.connection)
+        self.initialize_vendor_state(schema_editor)
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
@@ -127,6 +128,8 @@ class AddDefaultValue(Operation):
         if not self.is_supported_vendor(schema_editor.connection.vendor):
             return
 
+        self.initialize_vendor_state(schema_editor)
+
         to_model = to_state.apps.get_model(app_label, self.model_name)
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             return
@@ -159,8 +162,16 @@ class AddDefaultValue(Operation):
             {"model_name": self.model_name, "name": self.name, "value": self.value},
         )
 
-    def initialize_vendor_state(self, connection):
-        self.set_quotes(connection.vendor)
+    def initialize_vendor_state(self, schema_editor):
+        self.set_quotes(schema_editor.connection.vendor)
+        major, minor, patch, __, ___ = django.VERSION
+        if (
+            self.is_mysql(schema_editor.connection.vendor)
+            and version_with_broken_quote_value(major, minor, patch)
+            and not hasattr(schema_editor.__class__, "_patched_quote_value")
+        ):
+            schema_editor.__class__.quote_value = quote_value
+            schema_editor.__class__._patched_quote_value = True
 
     def set_quotes(self, vendor):
         """
@@ -313,3 +324,25 @@ class AddDefaultValue(Operation):
             return "CURRENT_TIMESTAMP", self.quotes["constant"], True
 
         return value, self.quotes["value"], False
+
+
+def version_with_broken_quote_value(major, minor, patch):
+    if major == 2:
+        if minor == 1 and patch < 9:
+            return True
+        elif minor == 2 and patch < 2:
+            return True
+
+    return False
+
+
+def quote_value(self, value):
+    self.connection.ensure_connection()
+
+    # MySQLdb escapes to string, PyMySQL to bytes.
+    quoted = self.connection.connection.escape(
+        value, self.connection.connection.encoders
+    )
+    if isinstance(value, str) and isinstance(quoted, bytes):
+        quoted = quoted.decode()
+    return quoted
