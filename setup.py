@@ -16,6 +16,6 @@ from setuptools import setup
 
 
 setup(
-    version='0.3.0',
+    version='0.3.1',
     packages=['django_add_default_value'],
 )
