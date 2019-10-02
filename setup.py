@@ -18,4 +18,5 @@ from setuptools import setup
 setup(
     version='0.3.1',
     packages=['django_add_default_value'],
+    long_description_content_type='text/markdown',
 )
