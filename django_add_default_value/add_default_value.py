@@ -149,8 +149,11 @@ class AddDefaultValue(Operation):
         else:
             constraint_name = self.mssql_constraint_name()
             format_kwargs.update(constraint_name=constraint_name)
-            sql_query = "DROP DEFAULT {name_quote_start}{constraint_name}{name_quote_end};".format(
-                **format_kwargs
+            sql_query = (
+                "ALTER TABLE {name_quote_start}{table}{name_quote_end} "
+                "DROP CONSTRAINT {name_quote_start}{constraint_name}{name_quote_end}".format(
+                    **format_kwargs
+                )
             )
 
         schema_editor.execute(sql_query)
