@@ -79,6 +79,10 @@ class AddDefaultValue(Operation):
         self.initialize_vendor_state(schema_editor)
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
+
+        if not self.allow_migrate_model(schema_editor.connection.alias, to_model):
+            return
+
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             warnings.warn(
                 "You requested a default for a field / database combination "
@@ -131,6 +135,10 @@ class AddDefaultValue(Operation):
         self.initialize_vendor_state(schema_editor)
 
         to_model = to_state.apps.get_model(app_label, self.model_name)
+
+        if not self.allow_migrate_model(schema_editor.connection.alias, to_model):
+            return
+
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             return
 
