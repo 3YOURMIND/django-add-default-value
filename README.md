@@ -98,13 +98,6 @@ You should now be able to run the tests using `tox`. Select your environment
 when needed, using the `-e` command line flag. See
 [Tox's excellent documentation](https://preview.tinyurl.com/y3faq6ab).
 
-Roadmap
--------
-- 0.1: Better and maintainable packaging
-- 0.3: Tests work with tox. Supported platforms / versions frozen
-- 0.5: Solid tests integrated with Travis or similar CI pipeline
-- 0.9: Final API changes preparing for 1.0
-- 1.0: API freeze
 
 License
 -------
