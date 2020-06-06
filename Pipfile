@@ -7,19 +7,12 @@ name = "pypi"
 
 [dev-packages]
 coverage = "*"
-# Select the appropreate ones for development. These must match up.
-Django = ">=1.11,<2"
-# Django = ">=2.0,<2.1"
-# Django = ">=2.1,<2.2"
-django-pyodbc-azure = { git = "https://github.com/mes3yd/django-pyodbc-azure.git", ref = "1.11.15.1" }
-# django-pyodbc-azure = { git = "https://github.com/mes3yd/django-pyodbc-azure.git", ref = "2.0.8.1" }
-# django-pyodbc-azure = ">=2.1.0.0"
+Django = ">=1.11"
 "flake8" = "*"
 bumpversion = "*"
-e1839a8 = {editable = true,path = "."}
-"psycopg2-binary" = "*"
 mysql-connector-python = "*"
 mysqlclient = "<1.4"
+"psycopg2-binary" = "*"
 tox = "*"
 black = "==18.6b4"
 ipython = "*"

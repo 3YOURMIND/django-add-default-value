@@ -11,12 +11,12 @@ to the database scheme.
 [![Stars](https://img.shields.io/github/stars/3YOURMIND/django-add-default-value.svg?style=social&label=Stars)](https://github.com/3YOURMIND/django-add-default-value/stargazers)
 
 
-Dependencies
+Supported Databases
 ------------
 
 * MySQL (or compatible)
 * PostgreSQL
-* Microsoft SQL Server
+* MSSQL (currently not tested)
 
 Installation
 ------------
@@ -76,20 +76,6 @@ Contributing
 First of all, thank you very much for contributing to this project. Please base
 your work on the ``master`` branch and target ``master`` in your pull request.
 
-There are a few packages needed on the host system. For ubuntu the following
-commands will install these
-
-```text
-apt-get install freetds-dev unixodbc-dev tdsodbc
-```
-Then add the following text to `/etc/odbcinst.ini`:
-```ini
-[FreeTDS]
-Description=FreeTDS unixODBC Driver
-Driver=/usr/lib/x86_64-linux-gnu/odbc/libtdsodbc.so
-Setup=/usr/lib/x86_64-linux-gnu/odbc/libtdsS.so
-```
-
 To succesfully use the `dbshell` management command (very useful for debugging),
 the client binaries for the respective database engines are needed.
 
@@ -110,15 +96,8 @@ environment to the values).
 
 You should now be able to run the tests using `tox`. Select your environment
 when needed, using the `-e` command line flag. See
-[Tox's excellent documentation](https://preview.tinyurl.com/y3faq6ab).
+[Tox's excellent documentation](https://tox.readthedocs.io/en/latest/).
 
-Roadmap
--------
-- 0.1: Better and maintainable packaging
-- 0.3: Tests work with tox. Supported platforms / versions frozen
-- 0.5: Solid tests integrated with Travis or similar CI pipeline
-- 0.9: Final API changes preparing for 1.0
-- 1.0: API freeze
 
 License
 -------
