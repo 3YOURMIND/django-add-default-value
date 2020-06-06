@@ -96,7 +96,7 @@ environment to the values).
 
 You should now be able to run the tests using `tox`. Select your environment
 when needed, using the `-e` command line flag. See
-[Tox's excellent documentation](https://preview.tinyurl.com/y3faq6ab).
+[Tox's excellent documentation](https://tox.readthedocs.io/en/latest/).
 
 
 License
