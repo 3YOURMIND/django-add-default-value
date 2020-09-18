@@ -1,11 +1,11 @@
 from __future__ import unicode_literals
 
+import io
 import os
 import unittest
 
 from django.core.management import call_command
 from django.test import TestCase, modify_settings
-from django.utils.six import StringIO
 
 settings_module = os.environ["DJANGO_SETTINGS_MODULE"]
 
@@ -30,7 +30,7 @@ class MigrateMixin:
 
 class CommandOutputMixin:
     def get_command_output(self, cmd, *cmd_args, **cmd_options):
-        file_obj = StringIO()
+        file_obj = io.StringIO()
         cmd_options.update(stdout=file_obj)
         call_command(cmd, *cmd_args, **cmd_options)
         output = file_obj.getvalue()
