@@ -91,12 +91,16 @@ class AddDefaultValue(Operation):
             )
             return
 
+        # Fetch the actual field so we get the column name properly
+        options = to_model._meta  # type: models.base.Options
+        field = options.get_field(self.name)
+
         sql_value, value_quote = self.clean_value(
             schema_editor.connection.vendor, self.value
         )
         format_kwargs = dict(
             table=to_model._meta.db_table,
-            field=self.name,
+            field=field.db_column,
             value=sql_value,
             value_quote_start=value_quote[START],
             value_quote_end=value_quote[END],
@@ -142,9 +146,13 @@ class AddDefaultValue(Operation):
         if not self.can_apply_default(to_model, self.name, schema_editor.connection):
             return
 
+        # Fetch the actual field so we get the column name properly
+        options = to_model._meta  # type: models.base.Options
+        field = options.get_field(self.name)
+
         format_kwargs = dict(
             table=to_model._meta.db_table,
-            field=self.name,
+            field=field.db_column,
             name_quote_start=self.quotes["name"][START],
             name_quote_end=self.quotes["name"][END],
         )
