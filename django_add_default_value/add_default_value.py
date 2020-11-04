@@ -100,7 +100,7 @@ class AddDefaultValue(Operation):
         )
         format_kwargs = dict(
             table=to_model._meta.db_table,
-            field=field.get_attname_colum(),
+            field=field.get_attname_column()[1],
             value=sql_value,
             value_quote_start=value_quote[START],
             value_quote_end=value_quote[END],
@@ -152,7 +152,7 @@ class AddDefaultValue(Operation):
 
         format_kwargs = dict(
             table=to_model._meta.db_table,
-            field=field.get_attname_colum(),
+            field=field.get_attname_column()[1],
             name_quote_start=self.quotes["name"][START],
             name_quote_end=self.quotes["name"][END],
         )
