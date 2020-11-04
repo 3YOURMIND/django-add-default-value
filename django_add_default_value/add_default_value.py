@@ -21,6 +21,7 @@ from django.utils import timezone
 
 NOW = "__NOW__"
 TODAY = "__TODAY__"
+UUID = "__UUID__"
 START = 0
 END = 1
 
@@ -341,6 +342,9 @@ class AddDefaultValue(Operation):
         # https://stackoverflow.com/a/20461045/10000573
         if value == NOW and self.is_mysql(vendor):
             return "CURRENT_TIMESTAMP", self.quotes["constant"], True
+
+        if value == UUID and self.is_postgresql(vendor):
+            return "uuid_generate_v4()", self.quotes['function'], True
 
         return value, self.quotes["value"], False
 
