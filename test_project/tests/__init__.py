@@ -57,6 +57,8 @@ class MigrationsTesterBase(MigrateMixin, CommandOutputMixin):
         'ALTER TABLE "dadv_testhappypath" ALTER COLUMN "married" SET DEFAULT now();'
     )
 
+    custom_column_match = 'ALTER TABLE "dadv_testcustomcolumnname" ALTER COLUMN "custom_field" SET DEFAULT \'False\';'
+
     def test_bool_default(self):
         actual = self.get_command_output("sqlmigrate", "dadv", "0001")
         self.assertIn(self.bool_match, actual)
@@ -86,6 +88,11 @@ class MigrationsTesterBase(MigrateMixin, CommandOutputMixin):
         actual = self.get_command_output("sqlmigrate", "dadv", "0004")
         self.assertIn(self.current_date_match, actual)
 
+    def test_custom_column_name(self):
+        """Make sure we can provide current dates as default"""
+        actual = self.get_command_output("sqlmigrate", "dadv", "0005")
+        self.assertIn(self.custom_column_match, actual)
+
 
 @unittest.skipUnless(
     settings_module == "test_project.settings_pgsql",
@@ -112,6 +119,8 @@ class MigrationsTesterMySQL(TestCase, MigrationsTesterBase):
         "ALTER TABLE `dadv_testhappypath` ALTER COLUMN `rebirth` SET DEFAULT "
         "CURRENT_TIMESTAMP;"
     )
+
+    custom_column_match = "ALTER TABLE `dadv_testcustomcolumnname` ALTER COLUMN `custom_field` SET DEFAULT '0';"
 
     @unittest.expectedFailure
     def test_text_default(self):

@@ -19,3 +19,8 @@ class TestHappyPath(models.Model):
     dob = models.DateField(default=date(1970, 1, 1))
     rebirth = models.DateTimeField(default=timezone.now)
     married = models.DateField(default=date.today)
+
+
+class TestCustomColumnName(models.Model):
+    id = models.BigAutoField(primary_key=True, db_column="custom_id")
+    is_functional = models.BooleanField(default=False, db_column="custom_field")
