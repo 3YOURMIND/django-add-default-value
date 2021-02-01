@@ -74,6 +74,9 @@ class AddDefaultValue(Operation):
         (forwards) direction.
         """
         if not self.is_supported_vendor(schema_editor.connection.vendor):
+            warnings.warn(
+                "AddDefaultValue cannot be applied on a non-supported vendor."
+            )
             return
 
         self.initialize_vendor_state(schema_editor)
@@ -134,6 +137,9 @@ class AddDefaultValue(Operation):
         drop the model's table.
         """
         if not self.is_supported_vendor(schema_editor.connection.vendor):
+            warnings.warn(
+                "AddDefaultValue cannot be applied on a non-supported vendor."
+            )
             return
 
         self.initialize_vendor_state(schema_editor)
