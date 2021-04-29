@@ -13,6 +13,7 @@ bumpversion = "*"
 mysql-connector-python = "*"
 mysqlclient = "2.0.1"
 "psycopg2-binary" = "*"
+django-cockroachdb = ">=2.2"  # Use the version of django-cockroachdb that corresponds to your version of Django.
 tox = "*"
 black = "==18.6b4"
 ipython = "*"

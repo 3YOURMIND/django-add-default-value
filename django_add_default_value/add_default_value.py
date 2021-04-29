@@ -216,7 +216,12 @@ class AddDefaultValue(Operation):
 
     @classmethod
     def is_supported_vendor(cls, vendor):
-        return cls.is_postgresql(vendor) or cls.is_mysql(vendor) or cls.is_mssql(vendor)
+        return (
+            cls.is_postgresql(vendor)
+            or cls.is_mysql(vendor)
+            or cls.is_mssql(vendor)
+            or cls.is_cockroachdb(vendor)
+        )
 
     @classmethod
     def is_default_vendor(cls, vendor):
@@ -233,6 +238,10 @@ class AddDefaultValue(Operation):
     @classmethod
     def is_mssql(cls, vendor):
         return vendor.startswith("microsoft")
+
+    @classmethod
+    def is_cockroachdb(cls, vendor):
+        return vendor.startswith("cockroachdb")
 
     @classmethod
     def is_mariadb(cls, connection):
