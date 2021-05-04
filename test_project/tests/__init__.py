@@ -105,7 +105,7 @@ class MigrationsTesterPgSQL(TestCase, MigrationsTesterBase):
 
 @unittest.skipUnless(
     settings_module == "test_project.settings_crdb",
-    "PostgreSQL/CockroachDB settings file not selected",
+    "CockroachDB settings file not selected",
 )
 @modify_settings(INSTALLED_APPS={"append": "dadv.apps.DadvConfig"})
 class MigrationsTesterCRDB(TestCase, MigrationsTesterBase):
