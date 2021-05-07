@@ -281,7 +281,7 @@ class AddDefaultValue(Operation):
                  fields.
         :rtype: bool
         """
-        if cls.is_postgresql(connection.vendor) or cls.is_mssql(connection.vendor):
+        if cls.is_cockroachdb(connection.vendor) or cls.is_postgresql(connection.vendor) or cls.is_mssql(connection.vendor):
             return True
 
         if not hasattr(connection, "mysql_version") or not callable(
