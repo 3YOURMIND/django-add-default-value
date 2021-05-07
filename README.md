@@ -17,6 +17,7 @@ Supported Databases
 * MySQL (or compatible)
 * PostgreSQL
 * MSSQL (currently not tested)
+* CockroachDB
 
 Installation
 ------------
