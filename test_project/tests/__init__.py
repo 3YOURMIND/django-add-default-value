@@ -109,20 +109,7 @@ class MigrationsTesterPgSQL(TestCase, MigrationsTesterBase):
 )
 @modify_settings(INSTALLED_APPS={"append": "dadv.apps.DadvConfig"})
 class MigrationsTesterCRDB(TestCase, MigrationsTesterBase):
-    bool_match = "Add to field TestBoolDefault.is_functional the default value False"
-    text_match = "Add to field TestTextDefault.description the default value No description provided"
-    charfield_match = "Add to field TestHappyPath.name the default value Happy path"
-    date_match = "Add to field testhappypath.dob the default value 1970-01-01"
-    current_timestamp_match = (
-        "Add to field testhappypath.rebirth the default value __NOW__"
-    )
-    current_date_match = (
-        "Add to field testhappypath.married the default value __TODAY__"
-    )
-
-    custom_column_match = (
-        "Add to field TestCustomColumnName.is_functional the default value False"
-    )
+    pass
 
 
 @unittest.skipUnless(
