@@ -216,7 +216,12 @@ class AddDefaultValue(Operation):
 
     @classmethod
     def is_supported_vendor(cls, vendor):
-        return cls.is_postgresql(vendor) or cls.is_mysql(vendor) or cls.is_mssql(vendor)
+        return (
+            cls.is_postgresql(vendor)
+            or cls.is_mysql(vendor)
+            or cls.is_mssql(vendor)
+            or cls.is_cockroachdb(vendor)
+        )
 
     @classmethod
     def is_default_vendor(cls, vendor):
@@ -233,6 +238,14 @@ class AddDefaultValue(Operation):
     @classmethod
     def is_mssql(cls, vendor):
         return vendor.startswith("microsoft")
+
+    @classmethod
+    def is_cockroachdb(cls, vendor):
+        return vendor.startswith("cockroachdb")
+
+    @classmethod
+    def is_postgresql_syntax_compatible(cls, vendor):
+        return cls.is_postgresql(vendor) or cls.is_cockroachdb(vendor)
 
     @classmethod
     def is_mariadb(cls, connection):
@@ -272,7 +285,9 @@ class AddDefaultValue(Operation):
                  fields.
         :rtype: bool
         """
-        if cls.is_postgresql(connection.vendor) or cls.is_mssql(connection.vendor):
+        if cls.is_postgresql_syntax_compatible(connection.vendor) or cls.is_mssql(
+            connection.vendor
+        ):
             return True
 
         if not hasattr(connection, "mysql_version") or not callable(
@@ -295,7 +310,7 @@ class AddDefaultValue(Operation):
         :param value: the value as provided in the migration
         :return: a 2-tuple containing the new value and the quotation to use
         """
-        if isinstance(value, bool) and not self.is_postgresql(vendor):
+        if isinstance(value, bool) and not self.is_postgresql_syntax_compatible(vendor):
             if value:
                 return 1, self.quotes["value"]
 
@@ -321,7 +336,7 @@ class AddDefaultValue(Operation):
             return value.isoformat(), self.quotes["value"], True
 
         if isinstance(value, datetime):
-            if self.is_postgresql(vendor):
+            if self.is_postgresql_syntax_compatible(vendor):
                 return (
                     value.isoformat(" ", timespec="seconds"),
                     self.quotes["value"],
@@ -339,7 +354,7 @@ class AddDefaultValue(Operation):
 
     def _clean_temporal_constants(self, vendor, value):
         if value == NOW or value == TODAY:
-            if self.is_postgresql(vendor):
+            if self.is_postgresql_syntax_compatible(vendor):
                 return "now()", self.quotes["function"], True
             elif self.is_mssql(vendor):
                 return "GETDATE()", self.quotes["function"], True
