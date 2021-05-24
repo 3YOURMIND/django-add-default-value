@@ -46,21 +46,21 @@ Given the following migration:
 **BEFORE**
 
 ```python
-    from django.db import migrations, models
+from django.db import migrations, models
 
-    
-    class Migration(migrations.Migration):
-        dependencies = [
-            ...
-        ]
 
-        operations = [
-             migrations.AddField(
-                 field=models.CharField(default='my_default', max_length=255),
-                 model_name='my_model',
-                 name='my_field',
-             ),
-         ]
+class Migration(migrations.Migration):
+    dependencies = [
+        ...
+    ]
+
+    operations = [
+         migrations.AddField(
+             field=models.CharField(default='my_default', max_length=255),
+             model_name='my_model',
+             name='my_field',
+         ),
+     ]
 ```
 
 Modify the migration to add a default value:
@@ -68,28 +68,28 @@ Modify the migration to add a default value:
 **AFTER**
 
 ```python
-    from django.db import migrations, models
-    
-    from django_add_default_value import AddDefaultValue
+from django.db import migrations, models
 
-    
-    class Migration(migrations.Migration):
-        dependencies = [
-            ...
-        ]
+from django_add_default_value import AddDefaultValue
 
-        operations = [
-             migrations.AddField(
-                 field=models.CharField(default='my_default', max_length=255),
-                 model_name='my_model',
-                 name='my_field',
-             ),
-             AddDefaultValue(
-                 model_name='my_model',
-                 name='my_field',
-                 value='my_default'
-             )
-         ]
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ...
+    ]
+
+    operations = [
+         migrations.AddField(
+             field=models.CharField(default='my_default', max_length=255),
+             model_name='my_model',
+             name='my_field',
+         ),
+         AddDefaultValue(
+             model_name='my_model',
+             name='my_field',
+             value='my_default'
+         )
+     ]
 ```
 
 If you check ``python manage.py sqlmigrate [app name] [migration]``,
