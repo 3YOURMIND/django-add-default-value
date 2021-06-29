@@ -290,16 +290,18 @@ class AddDefaultValue(Operation):
         ):
             return True
 
-        if not hasattr(connection, "mysql_version") or not callable(
-            getattr(connection, "mysql_version", None)
-        ):
+        if not hasattr(connection, "mysql_version"):
             return False
 
         if not cls.is_mariadb(connection):
             return False
 
         # noinspection PyUnresolvedReferences
-        major, minor, patch = connection.mysql_version()
+        try: # see if we need to calculate the version
+            mysql_version = connection.mysql_version()
+        except TypeError: # if it is already calulcated, then it can't be called
+            mysql_version = connection.mysql_version
+        major, minor, patch = mysql_version
         return major > 9 and minor > 1 and patch > 0
 
     def clean_value(self, vendor, value):
