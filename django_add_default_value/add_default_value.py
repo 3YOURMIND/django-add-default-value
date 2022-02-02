@@ -250,7 +250,10 @@ class AddDefaultValue(Operation):
     @classmethod
     def is_mariadb(cls, connection):
         if hasattr(connection, "mysql_is_mariadb"):
-            return connection.mysql_is_mariadb()
+            if callable(connection.mysql_is_mariadb):
+                return connection.mysql_is_mariadb()
+            else:
+                return connection.mysql_is_mariadb
         return False
 
     def can_apply_default(self, model, name, connection):
